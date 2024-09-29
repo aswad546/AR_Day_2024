@@ -15,7 +15,7 @@ class YourAgent(DriveInterface):
         """
         self.game_id = game_id
         self.need_to_find_target_pod = is_advanced_mode
-
+        self.picked_up_pode = False
     # This is the main function the simulator will call each turn
     def get_next_move(self, sensor_data: dict) -> DriveMove:
         """
@@ -48,4 +48,208 @@ class YourAgent(DriveInterface):
             DriveMove.LIFT_POD – If a pod is in the same tile, pick it up. The pod will now move with the drive until it is dropped
             DriveMove.DROP_POD – If a pod is in the same tile, drop it. The pod will now stay in this position until it is picked up
         """
-        pass
+
+        if self.picked_up_pode == False and self.need_to_find_target_pod:
+            currentLocation = sensor_data[SensorData.PLAYER_LOCATION]
+            x, y = currentLocation
+            if [x, y] == sensor_data[SensorData.TARGET_POD_LOCATION]:
+                self.picked_up_pode = True
+                return DriveMove.LIFT_POD
+
+            stack = [(x, y, [(x, y)])]
+            visited = set()
+            visited.add((x, y))
+            targetx, targety = -1, -1
+            while stack:
+                size = len(stack)
+                temp = []
+                for i in range(size):
+                    curx, cury, curPath = stack.pop(0)
+                    if [curx, cury] == sensor_data[SensorData.TARGET_POD_LOCATION]:
+                        if len(curPath) > 0:
+                            targetx, targety = curPath[1][0], curPath[1][1]
+                            break
+                    
+                    nextX, nextY = curx+1, cury
+                    extraFlag = True
+                    if self.picked_up_pode and [nextX, nextY] in sensor_data[SensorData.POD_LOCATIONS]:
+                        extraFlag = False
+                    if [nextX, nextY] not in sensor_data[SensorData.FIELD_BOUNDARIES] and (nextX, nextY) not in visited and extraFlag:
+                        flag = [nextX, nextY] in sensor_data[SensorData.DRIVE_LOCATIONS]
+                        if flag and len(curPath) > 2:
+                            newPath = curPath + [(nextX, nextY)]
+                            temp.append((nextX, nextY, newPath))
+                            visited.add((nextX, nextY))
+                        
+                        if not flag:
+                            newPath = curPath + [(nextX, nextY)]
+                            temp.append((nextX, nextY, newPath))
+                            visited.add((nextX, nextY))
+                    
+                    nextX, nextY = curx-1, cury
+                    extraFlag = True
+                    if self.picked_up_pode and [nextX, nextY] in sensor_data[SensorData.POD_LOCATIONS]:
+                        extraFlag = False
+                    if [nextX, nextY] not in sensor_data[SensorData.FIELD_BOUNDARIES] and (nextX, nextY) not in visited and extraFlag:
+                        flag = [nextX, nextY] in sensor_data[SensorData.DRIVE_LOCATIONS]
+                        if flag and len(curPath) > 2:
+                            newPath = curPath + [(nextX, nextY)]
+                            temp.append((nextX, nextY, newPath))
+                            visited.add((nextX, nextY))
+                        
+                        if not flag:
+                            newPath = curPath + [(nextX, nextY)]
+                            temp.append((nextX, nextY, newPath))
+                            visited.add((nextX, nextY))
+
+                    nextX, nextY = curx, cury + 1
+                    extraFlag = True
+                    if self.picked_up_pode and [nextX, nextY] in sensor_data[SensorData.POD_LOCATIONS]:
+                        extraFlag = False
+                    if [nextX, nextY] not in sensor_data[SensorData.FIELD_BOUNDARIES] and (nextX, nextY) not in visited and extraFlag:
+                        flag = [nextX, nextY] in sensor_data[SensorData.DRIVE_LOCATIONS]
+                        if flag and len(curPath) > 2:
+                            newPath = curPath + [(nextX, nextY)]
+                            temp.append((nextX, nextY, newPath))
+                            visited.add((nextX, nextY))
+                        
+                        if not flag:
+                            newPath = curPath + [(nextX, nextY)]
+                            temp.append((nextX, nextY, newPath))
+                            visited.add((nextX, nextY))
+                    
+                    nextX, nextY = curx, cury - 1
+                    extraFlag = True
+                    if self.picked_up_pode and [nextX, nextY] in sensor_data[SensorData.POD_LOCATIONS]:
+                        extraFlag = False
+                    if [nextX, nextY] not in sensor_data[SensorData.FIELD_BOUNDARIES] and (nextX, nextY) not in visited and extraFlag:
+                        flag = [nextX, nextY] in sensor_data[SensorData.DRIVE_LOCATIONS]
+                        if flag and len(curPath) > 2:
+                            newPath = curPath + [(nextX, nextY)]
+                            temp.append((nextX, nextY, newPath))
+                            visited.add((nextX, nextY))
+                        
+                        if not flag:
+                            newPath = curPath + [(nextX, nextY)]
+                            temp.append((nextX, nextY, newPath))
+                            visited.add((nextX, nextY))
+
+                if targetx != -1 and targety != -1:
+                    break
+                
+                stack = temp
+            
+            if targetx == -1 and targety == -1:
+                return DriveMove.NONE
+
+            if targetx > x:
+                return DriveMove.RIGHT
+            if targetx < x:
+                return DriveMove.LEFT
+            if targety > y:
+                return DriveMove.UP
+            if targety < y:
+                return DriveMove.DOWN
+
+        
+        currentLocation = sensor_data[SensorData.PLAYER_LOCATION]
+        x, y = currentLocation
+        if [x, y] in sensor_data[SensorData.GOAL_LOCATIONS]:
+            return DriveMove.DROP_POD
+        stack = [(x, y, [(x, y)])]
+        visited = set()
+        visited.add((x, y))
+        targetx, targety = -1, -1
+        while stack:
+            size = len(stack)
+            temp = []
+            for i in range(size):
+                curx, cury, curPath = stack.pop(0)
+                if [curx, cury] in sensor_data[SensorData.GOAL_LOCATIONS]:
+                    if len(curPath) > 1:
+
+                        targetx, targety = curPath[1][0], curPath[1][1]
+
+                        break
+                
+                nextX, nextY = curx+1, cury
+                extraFlag = True
+                if self.picked_up_pode and [nextX, nextY] in sensor_data[SensorData.POD_LOCATIONS]:
+                    extraFlag = False
+                if [nextX, nextY] not in sensor_data[SensorData.FIELD_BOUNDARIES] and (nextX, nextY) not in visited and extraFlag:
+                    flag = [nextX, nextY] in sensor_data[SensorData.DRIVE_LOCATIONS]
+                    if flag and len(curPath) > 2:
+                        newPath = curPath + [(nextX, nextY)]
+                        temp.append((nextX, nextY, newPath))
+                        visited.add((nextX, nextY))
+                    
+                    if not flag:
+                        newPath = curPath + [(nextX, nextY)]
+                        temp.append((nextX, nextY, newPath))
+                        visited.add((nextX, nextY))
+                
+                nextX, nextY = curx-1, cury
+                extraFlag = True
+                if self.picked_up_pode and [nextX, nextY] in sensor_data[SensorData.POD_LOCATIONS]:
+                    extraFlag = False
+                if [nextX, nextY] not in sensor_data[SensorData.FIELD_BOUNDARIES] and (nextX, nextY) not in visited and extraFlag:
+                    flag = [nextX, nextY] in sensor_data[SensorData.DRIVE_LOCATIONS]
+                    if flag and len(curPath) > 2:
+                        newPath = curPath + [(nextX, nextY)]
+                        temp.append((nextX, nextY, newPath))
+                        visited.add((nextX, nextY))
+                    
+                    if not flag:
+                        newPath = curPath + [(nextX, nextY)]
+                        temp.append((nextX, nextY, newPath))
+                        visited.add((nextX, nextY))
+
+                nextX, nextY = curx, cury + 1
+                extraFlag = True
+                if self.picked_up_pode and [nextX, nextY] in sensor_data[SensorData.POD_LOCATIONS]:
+                    extraFlag = False
+                if [nextX, nextY] not in sensor_data[SensorData.FIELD_BOUNDARIES] and (nextX, nextY) not in visited and extraFlag:
+                    flag = [nextX, nextY] in sensor_data[SensorData.DRIVE_LOCATIONS]
+                    if flag and len(curPath) > 2:
+                        newPath = curPath + [(nextX, nextY)]
+                        temp.append((nextX, nextY, newPath))
+                        visited.add((nextX, nextY))
+                    
+                    if not flag:
+                        newPath = curPath + [(nextX, nextY)]
+                        temp.append((nextX, nextY, newPath))
+                        visited.add((nextX, nextY))
+                
+                nextX, nextY = curx, cury - 1
+                extraFlag = True
+                if self.picked_up_pode and [nextX, nextY] in sensor_data[SensorData.POD_LOCATIONS]:
+                    extraFlag = False
+                if [nextX, nextY] not in sensor_data[SensorData.FIELD_BOUNDARIES] and (nextX, nextY) not in visited and extraFlag:
+                    flag = [nextX, nextY] in sensor_data[SensorData.DRIVE_LOCATIONS]
+                    if flag and len(curPath) > 2:
+                        newPath = curPath + [(nextX, nextY)]
+                        temp.append((nextX, nextY, newPath))
+                        visited.add((nextX, nextY))
+                    
+                    if not flag:
+                        newPath = curPath + [(nextX, nextY)]
+                        temp.append((nextX, nextY, newPath))
+                        visited.add((nextX, nextY))
+
+            if targetx != -1 and targety != -1:
+                break
+            
+            stack = temp
+        
+        if targetx == -1 and targety == -1:
+            return DriveMove.NONE
+
+        if targetx > x:
+            return DriveMove.RIGHT
+        if targetx < x:
+            return DriveMove.LEFT
+        if targety > y:
+            return DriveMove.UP
+        if targety < y:
+            return DriveMove.DOWN
+        
